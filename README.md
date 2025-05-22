@@ -3202,6 +3202,370 @@ try:
 except:
     print("出错了~")
 ```
-`try`-`except`也可以选择捕捉到的异常进行处理，拿`1/0`举例子，报的是`ZeroDivisionError`的错误：
+#### 处理指定异常
+`try`-`except`也可以选择捕捉到的异常进行处理，当程序出现指定的报错时，才会执行`except`中的语句。拿`1/0`举例子，报的是`ZeroDivisionError`的错误：
 ```python
-try 
+try:
+    1/0
+except ZeroDivisionError:
+    print("0不能作为除数")
+
+# 类型错误，非除数不能为0
+try:
+    520+"111"
+except ZeroDivisionError:
+    print("0不能作为除数")
+```
+有时`except`后面也可以加一个可选参数`as`将报错保存进一个变量中，方便后续打印。例如：
+```python
+try:
+    1/0
+except ZeroDivisionError as e:
+    print(e)
+```
+有时我们编写程序时也不知道会发生什么错误，`except`支持捕获多个可能报错。在指定错误类型的时候就传入一个元组，包含多个错误类型即可。例如：
+```python
+try:
+    a,b = input().split()
+    a + b
+    a / b
+except (ZeroDivisionError , ValueError , TypeError):
+    pass # 捕获到上述异常直接跳过
+```
+#### 多分支结构
++ 多个`except`
+`try`-`except`也可以使用多分支结构。就像`if`-`elif`一样，符合条件时就执行相应分支下的代码，且当满足一个分支后就不会再判断后续分支。例如：
+```python
+try:
+    a,b = input().split()
+    a + b
+    a / b
+except ZeroDivisionError:
+    print("0不能作为除数")
+except ValueError:
+    print("值不正确~")
+except TypeError:
+    print("类型不正确~")
+```
+
++ `try`-`except`-`else`
+`try`-`except`也可以和`else`进行搭配，它的含义就是当`try`的语句中没有检测出任何异常的情况下，就会执行`else`语句中的内容。例如：
+```python
+try:
+    1/0
+except:
+    print("逮到了~")  # 执行这个
+else:
+    print("没逮到~")
+
+
+try:
+    1/1
+except:
+    print("逮到了~") 
+else:
+    print("没逮到~")  # 执行这个
+```
+就是说，当`try`语句中没有异常的时候就执行`else`中的内容。
+
++ `try`-`except`-`finally`
+`try`-`except`还可以与其搭配的是`finally`，当然可以和上面的`else`一起用。它的含义是无论异常是否发生，都必须执行的内容。例如：
+```python
+try:
+    1/0
+except:
+    print("逮到了~")  # 执行这个
+else:
+    print("没逮到~")
+finally:
+    print("逮没逮到都吱一声~") # 这个也会被执行
+
+
+try:
+    1/1
+except:
+    print("逮到了~")  
+else:
+    print("没逮到~")  # 执行这个
+finally:
+    print("逮没逮到都吱一声~") # 这个也会被执行
+```
+`finally`在编程中通常用来执行收尾工作，比如说和文件操作结合起来，来关闭文件。例如：
+```python
+try:
+    f = open("class.txt","w")
+    f.write("Python")
+except:
+    print("出错了")
+finally:
+    f.close()  
+```
+这样写，不管程序会不会遇到错误，最后文件都会被正确地关闭。
+
++ `try`-`finally`
+`try`也可以直接和`finally`进行搭配，就像无论如何就要和世界道一声晚安~
+```python
+try:
+    while True:
+        pass
+finally:
+    print("晚安~")
+```
+
+### 异常的嵌套
+`try`也能够嵌套。例如：
+```python
+try:
+    try:
+        520 + "Python"
+    except:
+        print("内部异常")
+    1/0  # 不能放在嵌套的try前面
+except:
+    print("外部异常")
+finally:
+    print("收尾~")
+```
+内部嵌套的`try`和外部的`try`都能被正常执行。需要注意的是`1/0`必须在内部嵌套的`try`后面，否则遇到这个就直接结束去执行外面的`except`，而内部的`try`就不会被执行了。
+
+### `raise`语句
+`raise`可以直接生成一个异常，即使是之前的代码是多么的完美，多么的正确无误。`raise`语句只能用来生成被定义的异常，不能生成没有定义的异常。另外在异常类型之后也可以添加解释对抛出异常内容进行解释。例如：
+```python
+raise ValueError("值不正确")
+
+raise PythonError # PythonError未被定义，因此不能正确生成这个异常
+```
+#### 偷换异常
+`raise`语句结合`try`-`except`就能做到类似偷天换日的效果。例如：
+```python
+try:
+    1/0
+except:
+    raise ValueError("这样是不对的")
+```
+但是聪明的Python会发现你将这个报错替换成其他的错误，就像这样：
+```
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 2, in <module>
+    1/0
+ZeroDivisionError: division by zero
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 4, in <module>
+    raise ValueError("这样是不对的")
+ValueError: 这样是不对的
+```
+
+#### 异常链
+`raise`语句后加上`from`，就是异常链。例如：
+```python
+raise ValueError("这样可不行~") from ZeroDivisionError
+```
+运行之后就是一个异常链的报错，其中`ValueError`这个异常是来自于`ZeroDivisionError`这个异常，就像这样：
+```
+ZeroDivisionError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 1, in <module>
+    raise ValueError("这样可不行~") from ZeroDivisionError
+ValueError: 这样可不行~
+```
+
+### `assert`语句
+`assert`语句和`raise`语句类似，都是主动引发异常。但是`assert`语句只能引发一个叫做`AssertionError`的异常。这个语句存在的意义通常是用于代码调试。例如：
+```python
+s = input()
+assert s != "Python" 
+```
+当`s != "Python"`成立，什么事情都不会发生；反之则抛出 AssertionError 的异常。用`assert`语句相当于就不用去写`if`语句，来判断对不对，符不符合条件，直接一个异常告诉你当前和你的预期是不符合的。然后及时地进行调试。
+
+### 利用异常实现goto
+goto在程序中可以让代码做到指哪打哪的效果，但是`goto`存在于C语言中，python中没有这种语句。但是利用异常就可以做到类似的功能，比如一次性跳出多层循环的操作，相比于用`break`只能跳出一层循环或者一层一层跳出，这种操作在某些情况下是非常实用的。例如：
+```python
+try:
+    while True:
+        while True:
+            for i in range(10):
+                if i > 6:
+                    raise
+                print(i)
+            print("结束惹~")
+        print("结束惹~")
+    print("结束惹~")
+except:
+    print("到这里来惹~")
+```
+看结果，就明白一次性实现了跳出三层循环的操作，即使是有很多层循环，也能够一步到位，也变相地实现了一次性跳出多层循环的操作。
+
+## 类和对象
+一直以来，我们编写的代码都是基于对象的。有时候我们可能会听到OOP编程，即所谓的面向对象编程。想要学好OOP编程，就要像造物者一样去思考，因为面向对象最初的灵感就是来源于真是世界。实际上，面向对象也是一种代码封装的方法，它的主要思想就是将相关的数据和实现的函数给封装到了一起。下面就是用实际的例子展开说明类和对象。
+
+首先想象一下，如果你是造物者，让你创造出甲鱼这么个对象，应该从何入手。通常我们分为两个方面入手。一方面我们可以从静态的属性特征入手。比如说，甲鱼有一个头，两只眼睛，四条腿，还有一个外壳。另一方面我们也可以从它的行为特征入手，首先呢它是会爬的，如果你去追它，它就会跑；如果你把它逼急了，它还会咬人；它还会吃东西，睡觉等等。这些呢都是从动态的行为方面去描述。回到Python，Python的对象也是如此。一个对象的静态特征我们称之为**属性**，一个对象所能做的事情我们称之为**方法**。那么我们所要创建的对象就是属性加方法的一个结果。
+\[
+对象 = 属性 + 方法
+\]
+
+### 类
+在一个对象诞生之前，我们首先需要创建一个**类（class）**，然后再通过类来创造实际的对象。创建一个类，我们要用到`class`关键字，先看现成的代码：
+```python
+class Turtle:
+    head = 1
+    eyes = 2
+    legs = 4
+    shell = True
+
+    def crawl(self):
+        print("人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。")
+
+    def run(self):
+        print("虽然我行动很慢，但如果遇到危险，我还是会夺命狂奔的T_T")
+
+    def bite(self):
+        print("人善被人欺，龟善被人骑，我可是会咬人的！")
+    
+    def eat(self):
+        print("谁之盘中餐，粒粒皆辛苦。吃得好，不如吃得饱~")
+
+    def sleep(self):
+        print("Zzzz.....")
+```
+很显然，这是一个乌龟的类。那么类名的命名方式有一个约定俗成的标准就是**使用大写字母开头**，比如`Turtle`的开头就是大写的字母。类里面的函数都有一个`self`参数，这个暂时不说，后面会有仔细的讲解。最后也不难发现，所谓的属性就是写在类里面的变量；所谓的的方法就是写在类里面的函数。
+
+### 对象
+现在`Turtle`这个类是现成的，那么在这个类的基础上，我们怎么创建对象呢。去看如下代码：
+```python
+# 创建一个类
+class Turtle:
+    head = 1
+    eyes = 2
+    legs = 4
+    shell = True
+
+    def crawl(self):
+        print("人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。")
+
+    def run(self):
+        print("虽然我行动很慢，但如果遇到危险，我还是会夺命狂奔的T_T")
+
+    def bite(self):
+        print("人善被人欺，龟善被人骑，我可是会咬人的！")
+    
+    def eat(self):
+        print("谁之盘中餐，粒粒皆辛苦。吃得好，不如吃得饱~")
+
+    def sleep(self):
+        print("Zzzz.....")
+
+# 创建对象
+t1 = Turtle()
+t2 = Turtle() # 一个类可以创造出无数个对象
+
+# 调用类的属性和方法
+print(t1.head) # 返回1
+print(t1.legs) # 返回4
+print(t1.crawl()) # 返回 人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。
+print(t1.bite()) # 返回 人善被人欺，龟善被人骑，我可是会咬人的！
+print(t1.sleep()) # 返回 Zzzz.....
+
+print(t2.head) # 返回1
+print(t2.legs) # 返回4
+print(t2.crawl()) # 返回 人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。
+```
+程序运行后，存在了一个`Turtle`的类，我们像调用函数一样那样做就可以了，调用函数需要小括号，调用类也是如此，需要加上小括号，再在之前加上一个变量名`t1`。现在这个`t1`就是一个`Turtle`类的对象，也叫实例对象，它就拥有了这个类所定义的属性和方法。通过对象调用类中的属性和方法语法就是`[对象名].[属性名]`和`[对象名].[方法名]()`。因为方法是一个函数，因此需要加上小括号来进行调用。另外，只要有一个了类，就可以无限对它引用，从而创造出无数个对象。
+
+当一个对象创建出来之后，我们可以随意**更改**其属性值。比如`t2`这只乌龟，运气不太好，游断了一条腿，就可以更改其腿的值，如下。另外，同一个类创建的不同对象之间是不会共享数据。
+```python
+t2.legs = 3
+print(t2.legs)
+print(t1.legs) # t2的修改不会影响到t1
+```
+
+除此之外，我们也可以在创建出来的对象中**添加**属性。用对象名、属性名和赋值运算符添加。经过查看属性之后，不难发现，`t1`会比`t2`多一个`mouth`这个属性
+```python
+t1.mouth = 1
+dir(t1)
+dir(t2)
+```
+
+最后，python中处处是对象。例如，用`type()`查看各种数据类型。
+```python
+print(type(1))
+print(type("abc"))
+print(type([1,2,3]))
+```
+它们都返回的是
+```
+<class 'int'>
+<class 'str'>
+<class 'list'>
+```
+不难发现，发现前面都会带一个`class`，分别是整数类、字符串类和列表类的示例对象，其他数据类型同样如此。
+
+### `self`参数
+当在定义上面乌龟类中的函数时，形式参数都是`self`。如果形式参数不填，可以尝试以下代码：
+```python
+# 创建一个类
+class C:
+    def hello():
+        print("Hello~")
+
+c = C() # 创建一个对象
+c.hello() # 调用函数
+```
+结果是，程序报错了。
+```
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 7, in <module>
+    c.hello() # 调用函数
+TypeError: hello() takes 0 positional arguments but 1 was given
+```
+引发了一个`TypeError`异常，提示的意思是`hello()`这个方法**定义**的时候是不需要参数的，但是在**调用**时却硬塞了一个参数进去。为了说明这个问题，将`C`这个类重新定义一下。
+```python
+class C:
+    def get_self(self):
+        print(self)
+
+c = C() # 创建一个对象
+c.get_self() # 调用函数
+```
+运行程序，输出的内容如下：
+```
+<__main__.C object at 0x00000145A88D1430>
+```
+这个是类`C`的实例对象`c`。如何判断是不是一样的，可以直接`print(c)`。尝试后会发现结果和上面的内容是一样的。这说明了传递给方法的就是实例对象本身。
+
+#### 为什么要这样做？
+我们知道同一个类是可以生成无数个对象的，那我们在调用类里面的一个方法的时候，Python是通过`self`这个参数里面传递的信息才知道是哪个对象在调用。所以类中的每一个方法，默认的第一个参数都是`self`，且都是`self`。
+
+
+
+**对象编程的三个基本特征**是封装、继承和多态。
+
+### 封装
+封装的概念不难理解。像我们之前定义`Turtle`类的时候，它就把一个甲鱼的特征属性和行为能力给封装到了一起。在封装上有一点需要注意的是，不要把一些不相关的属性和方法给摆到一块，比如在正常情况下总不能给甲鱼添加一对翅膀，这显然不符合甲鱼🐟设~
+
+### 继承
+Python的类是支持继承的。它可以使用现有类的所有功能，并在无需重新编写代码的情况下对这些功能进行扩展。通过继承创建的新类，我们称之为**子类**；而被继承的类，我们称之为**父类**（也可以是基类或超类）。可以先看下面的代码：
+```python
+# 创建一个（父）类
+class A:
+    x = 520
+    def hello(self):
+        print("泥嚎，我是A~")
+
+# 创建子类
+class B(A):
+    pass
+
+# 子类的对象
+b = B()
+b.x
+b.hello()
+```
+上面的代码就是类`B`继承类`A`，那么类`B`的实例化对象`b`也是可以访问到类`A`中定义的属性和方法。
+
++ 尽请期待
