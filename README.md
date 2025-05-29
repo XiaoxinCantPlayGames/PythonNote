@@ -2024,9 +2024,9 @@ major = {"生工":"生物工程","计":"计算机科学与技术","制药":"制�
 items = major.items()
 keys = major.keys()
 values = major.values()
-print(items,keys,valuse)
+print(items,keys,values)
 major.pop("土木")
-print(items,keys,valuse)
+print(items,keys,values)
 ```
 
 ### 字典的修改
