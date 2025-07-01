@@ -3568,4 +3568,294 @@ b.hello()
 ```
 上面的代码就是类`B`继承类`A`，那么类`B`的实例化对象`b`也是可以访问到类`A`中定义的属性和方法。
 
+#### `isinstance()`函数
+如果需要判断一个对象是不是属于某一个类，就要用到`isinstance(object,class)`函数。示例：
+```python
+print(isinstance(b,B)) # 返回 True b 是 B 的对象
+print(isinstance(b,A)) # 返回 True b 是 B 的对象，B为A的子类
+print(isinstance(c,C))
+print(isinstance(c,B)) # 返回 False c 是 C 的对象，C不为B的子类
+```
+从上面的结果发现，当从子类创建的对象也属于这个子类的父类。
+
+#### `issubclass()`函数
+如果需要判断一个类是不是属于某一个类的子类，就要用到`issubclass()`函数。第一个参数为待检测的子类，第二个参数为父类。示例：
+```python
+print(issubclass(A,B)) # 返回 False , A 应该为 B 的父类
+print(issubclass(C,B)) # 返回 False ，C 本来就不是 B 的子类
+print(issubclass(B,A)) # 返回 False , A 应该为 B 的父类
+```
+
+#### 多重继承
+Python是支持多重继承的，也就是一个子类同时可以继承多个父类。比如现在我们让类`B`不继承类`A`，重新写一下代码：
+```python
+# 创建类
+class A:
+    x = 520
+    def hello(self):
+        print("泥嚎，我是A~")
+
+class B:
+    x = 1314
+    y = 5201314
+    def hello(self):
+        print("你好，我是B \(@^0^@)/")
+
+# 多重继承
+class C(A,B):
+    pass
+
+class D(B,A):
+    pass
+
+# 创建对象
+c = C()
+d = D()
+
+print(c.x)
+print(c.y)
+c.hello()
+
+print(d.x)
+print(d.y)
+d.hello()
+```
+从上面的代码看到：
++ 对象`c`：当`A`和`B`这两个类都存在相同的属性或方法时，都是输出`A`的属性和方法。只有当`A`中没有时，才会到`B`中寻找相应的属性和对象
++ 对象`d`：当`A`和`B`这两个类都存在相同的属性或方法时，都是输出`B`的属性和方法。
+
+所以，创建子类时，小括号里面的父类的顺序是子类中选取属性或方法的顺序。
+
+### 组合
+```python
+# 创建一个类
+class Turtle:
+    def say(self):
+        print("人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。")
+
+class Cat:
+    def say(self):
+        print("喵喵喵~")
+
+class Dog:
+    def say(self):
+        print("你好呀~我是一只小狗~")
+
+# 组合
+class Garden:
+    t = Turtle()
+    c = Cat()
+    d = Dog()
+    def say(self):
+        self.t.say() # 这些语句前面的 self. 是不能省略的
+        self.c.say()
+        self.d.say()
+
+# 创建对象
+g = Garden()
+
+g.say()
+```
+代码中的“这些语句前面的 self. 是不能省略的”后续会有讲解。
+
+### 绑定
+上一节说过“这些语句前面的 self. 是不能省略的”。如果将前面的`self.`删去，则会报错：
+```python
+# 创建一个类
+class Turtle:
+    def say(self):
+        print("人们总抱怨我动作慢吞吞的，殊不知如不积跬步，无以至千里的道理。")
+
+class Cat:
+    def say(self):
+        print("喵喵喵~")
+
+class Dog:
+    def say(self):
+        print("你好呀~我是一只小狗~")
+
+# 组合
+class Garden:
+    t = Turtle()
+    c = Cat()
+    d = Dog()
+    def say(self):
+        t.say()
+        c.say()
+        d.say()
+
+# 创建对象
+g = Garden()
+
+g.say()
+```
+运行之后，就报错了，报错的是：
+```base
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 26, in <module>
+    g.say()
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 19, in say
+    t.say()
+NameError: name 't' is not defined
+```
+提示的错误信息是`t`这个变量名未被定义。有些使用Visual Code的同学也会发现，在`t`、`c`、`d`的地方分别有代表未被定义的黄色下划线。会有疑问，在创建`Garden`的之初就已经定义了`t`、`c`、`d`，为什么程序还说未被定义呢？
+
+为了解决这个问题还需要知道`self`这个参数到底是什么。在最开始讲解`self`参数的时候，我们的求证代码是：
+```python
+class C:
+    def get_self(self):
+        print(self)
+
+c = C()
+c.get_self()
+print(c)
+```
+那么这个`self`就是起到一个**绑定**的作用。因为类的实例对象可以有千千万，但这些实例对象却是共享类里面的方法。所以，当我们在调用`c.get_self()`的时候，其实际的含义是调用类`C`的`get_self()`方法，并将实例对象作为参数传递进去，进而实现绑定。所以，类似的代码如下：
+```python
+C.get_self(c)
+```
+这两种代码是相等的。
+
+在实际中，除了类的方法是共享之外，实例的属性却可以是自己的，例如：
+```python
+class C:
+    def get_self(self):
+        print(self)
+
+# 创建对象
+d = C()
+d.x = 520
+d.y = 666
+c.x = 1314
+```
+那么这个时候，对象`d`的属性对象`c`是访问不了的。
+
+前面在学习函数中提到过，Python是一门支持内省的编程语言，它的对象在运行的时候拥有自我观察的能力，那么这个对象如果我们想要知道它当前拥有哪些属性，我们可以通过`__dict__`进行内省。例如：
+```python
+c.__dict__
+d.__dict__
+```
+这个时候，对象`c`和对象`d`用的是同一个类，但是属性不一样。这个时候如果要建立绑定，就要用到`self`来建立绑定。我们现在重新定义一个类`C`：
+```python
+class C:
+    def set_x(self,v):
+        self.x = v # self就相当于对象
+
+c = C()
+c.__dict__ # 这个时候的实例化对象`c`是没有任何属性的，是一个空字典
+
+c.set_x(520)
+c.__dict__ # 返回 {'x':520}
+```
+回头看一下代码，整个操作下来我们就知道了，原来这个`self.x = v`这个操作就相当于`c.x = v`，他们两个就已经通过`self`进行了一个绑定。
+
+### 构造函数
+构造函数有一个特殊的名称叫`__init__()`，我们只需要在类中定义`__init__()`方法，那么就可以在实例化对象的同时实现个性化定制。例如：
+```python
+# 定义类
+class C:
+    def __init__(self,x,y):
+        self.x = y # x是绑定到self这个对象的属性，y才是这个属性的值
+        self.y = x
+    def add(self):
+        return self.x + self.y
+    def mul(self):
+        return self.x * self.y
+
+# 创建对象
+c = C(2,3)
+d = C(4,5)
+
+print(c.add())
+print(c.mul())
+print(c.__dict__)
+
+print(d.add())
+print(d.mul())
+print(d.__dict__)
+```
+看返回的结果，`c.add()`得到的是5，`c.mul()`得到的是6。我们在实例化对象的时候，顺带着把两个变量也安排进去了。通过`c.__dict__`内省也能发现`{'x': 3, 'y': 2}`。之后我们传入不同的参数，也能得到不一样的结果。
+
+### 重写
+前面讲过继承知道，如果我们对父类的某一个属性或者某个方法不满意的话，我们是可以通过写一个同名的属性或方法对其进行覆盖。这种行为就称为子类对父类的**重写**。例如：
+```python
+class D(C):
+    def __init__(self,x,y,z):
+        C.__init__(self,x,y) # 直接调用类C的方法：类C中存在 self.x = y ；self.y = x
+        self.z = z
+    def add(self):
+        return C.add(self) + self.z
+    def mul(self):
+        return C.mul(self) * self.z
+
+d = D(2,3,4)
+print(d.add())
+print(d.mul())
+```
+这种直接通过类名访问类里边的方法的做法，我们称之为**调用未绑定的父类方法**，这种方法比较直接，但没有错，就是显得有些鲁莽，比如说有时候就可能会造成**钻石继承**的问题。
+
+#### 钻石继承
+先通过例子来展示什么是钻石继承：
+```python
+class A:
+    def __init__(self):
+        print("Hello~我是A~")
+
+class B1(A):
+    def __init__(self):
+        A.__init__(self)
+        print("Hello~我是B1~")
+
+class B2(A):
+    def __init__(self):
+        A.__init__(self)
+        print("Hello~我是B2~")
+
+class C(B1,B2):
+    def __init__(self):
+        B1.__init__(self)
+        B2.__init__(self)
+        print("Hello~我是C~")
+
+c = C()
+```
+执行后，发现返回为：
+```base
+Hello~我是A~
+Hello~我是B1~
+Hello~我是A~
+Hello~我是B2~
+Hello~我是C~
+```
+发现类`A`竟然重复初始化了两次。其实,，类`C`是同时继承是类`B1`和类`B2`的，然后类`B1`和类`B2`有是继承自类`A`的，所以当我们用类`C`去调用类`B1`和类`B2`的构造函数的时候，类`A`的构造函数会跟着被调用两次，类`B1`和类`B2`各一次。满足了钻石继承的条件。
+
+具体的解决办法就是需要用到`super()`函数。`super()`函数能够在父类中搜索指定的方法，并自动绑定好`self`参数。例如
+```python
+class A:
+    def __init__(self):
+        print("Hello~我是A~")
+
+class B1(A):
+    def __init__(self):
+        super().__init__() # 不要参数的原因是super()函数能传进去
+        print("Hello~我是B1~")
+
+class B2(A):
+    def __init__(self):
+        super().__init__()
+        print("Hello~我是B2~")
+
+class C(B1,B2):
+    def __init__(self):
+        super().__init__()
+        super().__init__()
+        print("Hello~我是C~")
+
+c = C()
+```
+我们用的`super()`函数去查找父类中的方法，它就会自动按照MRO顺序去搜索父类的相关方法，并且自动避免重复调用的问题。
++ MRO顺序：如果出现同名的属性或方法，Python会有一个明确的查找覆盖的顺序，这个顺序的官方术语叫**方法解析顺序**（Method Resolution Order，MRO）。要查找一个类的MRO方法，一种是通过MRO方法，例如`C.mro()`、`B1.mro()`；另外一种方法就是通过MRO属性`__mro__`，例如`C.__mro__`、`B2.__mro__`
+
+最后需要强调由于`super()`函数是依赖于MRO顺序的，但是MRO这个排序方式对于初学者来说很迷，常常倒是`super()`函数常常不能如大家预期那样去工作。
+
 + 尽请期待
