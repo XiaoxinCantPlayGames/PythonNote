@@ -4,7 +4,7 @@
 ## 编写代码时的注意事项
 编写代码时要注意中英文标点符号，除了字符串中可以用中文标点，其他**涉及到代码的标点必须使用英文标点**。相同代码块下的语句中出现的空格不影响编译，只是为了美观，你可以更具自己的喜好选择要不要加空格。
 
-本文编写的代码大部分可以直接运行在python安装的IDLE中，也可以使用Microsoft visual studio code和Microsoft visual studio等其他软件编写。在其他第三方IDLE中，可能不会像官方的IDLE中访问之后就能直接返回结果，这个时候建议使用`print()`将结果打印出来。
+本文编写的代码大部分可以直接运行在python安装的IDLE中，也可以使用Microsoft visual studio code和Microsoft visual studio等其他软件编写。在其他第三方IDE中，可能不会像官方的IDLE中访问之后就能直接返回结果，这个时候建议使用`print()`将结果打印出来。
 
 
 ## 变量
