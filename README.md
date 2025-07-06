@@ -1,7 +1,9 @@
 # 【Python教程】《零基础入门学习Python》最新版（完结撒花🎉）
 [B站视频链接](https://www.bilibili.com/video/BV1c4411e77t/)
 
-## 编写代码时的注意事项
+## 前言
+本文只是作为一个随手写的笔记，在语言上面没有过多的推敲，只是为了看懂，因此就会有不少的语病，请谅解！
+### 编写代码时的注意事项
 编写代码时要注意中英文标点符号，除了字符串中可以用中文标点，其他**涉及到代码的标点必须使用英文标点**。相同代码块下的语句中出现的空格不影响编译，只是为了美观，你可以更具自己的喜好选择要不要加空格。
 
 本文编写的代码大部分可以直接运行在python安装的IDLE中，也可以使用Microsoft visual studio code和Microsoft visual studio等其他软件编写。在其他第三方IDE中，可能不会像官方的IDLE中访问之后就能直接返回结果，这个时候建议使用`print()`将结果打印出来。
@@ -3857,5 +3859,218 @@ c = C()
 + MRO顺序：如果出现同名的属性或方法，Python会有一个明确的查找覆盖的顺序，这个顺序的官方术语叫**方法解析顺序**（Method Resolution Order，MRO）。要查找一个类的MRO方法，一种是通过MRO方法，例如`C.mro()`、`B1.mro()`；另外一种方法就是通过MRO属性`__mro__`，例如`C.__mro__`、`B2.__mro__`
 
 最后需要强调由于`super()`函数是依赖于MRO顺序的，但是MRO这个排序方式对于初学者来说很迷，常常倒是`super()`函数常常不能如大家预期那样去工作。
+
+### Mix-in
+我们既然讲到了多继承，就不得不提到**Mix-in**这个概念，其意思是“混入”或者“乱入”。其实它是一种设计模式，所谓设计模式就是利用编程语言已有的特性，针对面向对象开发过程中反复出现的问题，而设计出来的解决方案。打个比方，前面我们学习的语法就相当于是一步一步教会大家手上和脚上的功夫，那么学习设计模式就是教你如何去打组合拳，手脚并用这样子。语法都是我们学习过的东西，就是怎么把它们给组合起来。例如：
+```python
+class Animal:
+    def __init__(self,name,age):
+        self.name = name
+        self.age = age
+    def say(self):
+        print(f"我叫{self.name}，今年{self.age}岁")
+
+class Pig(Animal):
+    def special(self):
+        print("我的技能是拱大白菜~")
+
+p = Pig("大肠",5)
+p.say()
+p.special()
+```
+我们先来看这段代码，这里我们先定义了一个`Animal`的类，这个类有构造函数，构造函数需要传入名字和年龄，之后还有一个`say`方法。然后我们定义了一个`Pig`类，去继承这个`Animal`这个类。接着我们这个`Pig`类去实例化一个对象`p`，名字叫“大肠”、5岁，然后就调用它的`say`方法和`special`方法。我们执行后就是：
+```base
+我叫大肠，今年5岁
+我的技能是拱大白菜~
+```
+现在，我们想给这一只大肠起飞，能不能再不修改原来类的结构让大肠飞起来？仔细思考一下并不难，我们可以写一个类，它的功能就是飞，让`Pig`这个类去继承它，它能够使用这个类里面的方法和属性，就像我们这个`Pig`类去继承`Animal`的时候，我们可以使用其中的`say`方法。例如：
+```python
+class Animal:
+    def __init__(self,name,age):
+        self.name = name
+        self.age = age
+    def say(self):
+        print(f"我叫{self.name}，今年{self.age}岁")
+
+class FlyMixin:
+    del fly(self):
+    print("啊哦哦，我可以飞了~")
+
+class Pig(FlyMixin,Animal):
+    def special(self):
+        print("我的技能是拱大白菜~")
+
+p = Pig("大肠",5)
+p.say()
+p.special()
+p.fly()
+```
+以下是练习`Mixin`这个技巧，理解更为深刻，需要分析下面的代码，自己可以尝试去分析下面的代码，看能不能理解:
+```python
+class Displayer:
+    def display(self,message):
+        print(message)
+
+class LoggerMixin:
+    def log(self,message,filename="logfile.txt"):
+        with open(filename,"a") as f:
+            f.write(message)
+    
+    def display(self,message):
+        super().display(message)
+        self.log(message)
+
+class MySubClass(LoggerMixin,Displayer):
+    def log(self,message):
+        super().log(message,filename="subclasslog.txt")
+
+subclass = MySubClass()
+subclass.display("This is a test")
+```
+以下是这个代码的分析过程：
+> 代码的最开始定义了三个类，在这之后就是实例化对象`subclass`然后调用的`display`方法，参数是`"This is a test"`。从最后面往前面看，`subclass`调用的`display`方法，那么找这个`display`方法是谁的。在类`MySubClass`中不存在`displaye`方法，因此要从类`MySubClass`的父类中查找。在定义类`MySubClass`传入了两个父类，一个是类`Displayer`另一个是类`LoggerMixin`（一般看到Mixin就可以把它当作外挂，它就是外挂的代名词。它是为了添加某个功能而后期添加上去的）。根据先左后右的原则，先查看父类`LoggerMixin`中的方法，存在`display`方法，因此调用的是类`LoggerMixin`中的`display`方法，但是这个`display`方法是带了一个`message`参数的，也就是说这里会把`"This is a test"`传递给它。在方法实现了第一句就是`super().display(message)`。之前说过`super()`就会去父类里面查找对应的方法，而类`LoggerMixin`没有写父类，那默认就是`object`（任何类都是`object`的一个子类），但是`object`作为一个总的基类是不可能有`display`方法的。为了解释这个问题，因此这需要了解MRO顺序，这是可以先查看类`MySubClass`的MRO顺序是什么样的：
+>```python
+>print(MySubClass.mro()) # 添加在上面代码的最后
+>```
+>返回的是：
+>```base
+>[<class '__main__.MySubClass'>, <class '__main__.LoggerMixin'>, <class '__main__.Displayer'>, <class 'object'>]
+>```
+>可以看到先是`MySubClass`，然后`LoggerMixin`，接着是`Displayer`，最后才是`object`。所以我们在这个类`LoggerMixin`中调用`super()`函数，程序先去`Displayer`中查找，而不是`object`。因此，这个`super().display(message)`其实就是调用的类`Displayer`里面的`display`方法。结果就是在屏幕上面打印一行"This is a test"这个字符串。
+>下一句`self.log(message)`里面的`log()`方法，这个方法的归属取决于`self`，而`self`就是`subclass`本身，然后这个对象是来自类`MySubClass`的，而类`MySubClass`里面刚好有`log()`这个方法的实现，所以调用的其实就是类`MySubClass`的`log()`方法`super().log(message,filename="subclasslog.txt")`。这个方法里面又有`super()`函数，还是根据MRO顺序。根据上面的顺序，Python先在类`LoggerMixin`中找，且存在`log()`方法。`log()`方法的功能是创建一个文件，并将这个`message`追加到保存到文件中，文件名如果有就用传入的文件名，没有就用默认的`logfile.txt`，而恰好在类`MySubClass`中的`log()`中的`super().log(message,filename="subclasslog.txt")`指定了文件名的参数为`subclasslog.txt`，所以文件名就是“subclasslog.txt”。
+
+
+### 多态
+多态在编程中是一个非常重要的概念。它是指同一个运算符、函数或对象，在不同的场景下具有不同的作用效果这么一个技能。我们知道`+`和`*`在Python中广泛使用，它们并非只是单一的用途。当它们两边都是数字的时候执行的是数字运算；两边有字符串就是另外一种运算，比如`"Py"+"thon"`或者`"Python"*3`。除了运算符之外，Python中的函数也是支持多态的，比如`len()`。`len()`函数在参数为字符串的时候，返回的是字符串的长度；参数是列表的时候，返回的是列表中元素的个数；参数是字典的时候，返回的是字典中键的个数。之前讲过的重写，就是实现类继承的多态。例如：
+```python
+class Shape:
+    def __init__(self,name):
+        self.name = name
+    def area(self):
+        pass
+
+class Square(Shape):
+    def __init__(self,length):
+        super().__init__("正方形")
+        self.length = length
+    def area(self):
+        return self.length * self.length
+
+class Circle(Shape):
+    def __init__(self,radius):
+        super().__init__("圆形")
+        self.radius = radius
+    def area(self):
+        return 3.14 * self.radius * self.radius
+
+class Triangle(Shape):
+    def __init__(self,base,height):
+        super().__init__("三角形")
+        self.base = base
+        self.height = height
+    def area(self):
+        return self.base * self.height
+
+s = Square(5)
+c = Circle(6)
+t = Triangle(3,4)
+
+print(s.name,s.area())
+print(c.name,c.area())
+print(t.name,t.area())
+```
+在这里面，正方形、圆形、三角形都继承自父类`Shape`，但是它们都重写了父类中的`area()`方法，这个就是多态的体现。
+
+了解一下自定义函数是图和实现多态接口。在此之前我们也是需要定义几个类。例如：
+```python
+class Cat:
+    def __init__(self,name,age):
+        self.name = name
+        self.age = age
+    def intro(self):
+        print(f"我是一只小猫~我叫{self.name}，今年{self.age}岁")
+    def say(self):
+        print("喵喵~")
+
+class Dog:
+    def __init__(self,name,age):
+        self.name = name
+        self.age = age
+    def intro(self):
+        print(f"你好~我是一只小狗~我叫{self.name}，今年{self.age}岁")
+    def say(self):
+        print("汪汪~")
+
+class Pig:
+    def __init__(self,name,age):
+        self.name = name
+        self.age = age
+    def intro(self):
+        print(f"你好~我是一只小猪~我叫{self.name}，今年{self.age}岁")
+    def say(self):
+        print("oink~")
+
+c = Cat("咪咪",4)
+d = Dog("布莱克",3)
+p = Pig("大肠",6)
+
+def animal(x):
+    x.intro()
+    x.say()
+
+animal(c)
+animal(d)
+animal(p)
+```
+
+### “私有变量” 与 name mangling
+所谓私有变量就是指通过某种手段，使得对象中的属性或方法无法被外部所访问的机制，这其实是一种保护机制，用来保护我们自己。编程语言通过层层限制来阻止程序员犯错误，就是这样的一个逻辑。Python则相反，Python的逻辑是100%相信程序员，给予程序员最大的自由度，程序员又必须为自己编写的代码负责任。综上，在Python中那种仅限从一个对象内部才能够访问的“私有变量”并不存在，所以才在“私有变量”上面加上了一对双引号。d但是Python并不是什么都不做，而是引入了一个`name mangling`的一个机制，意思为名字改编、名称改写或者名称修饰。它的语法也很简单，就是在名字前面加上两个连续的下划线。例如：
+```python
+class C:
+    def __init__(self,x):
+        self.__x = x
+    def set_x(self,x):
+        self.__x = x
+    def get_x(self):
+        print(self.__x)
+    
+c = C(520)
+try:
+    c.__x # 我们无法直接通过变量名来访问到这个变量，会报错，为了程序能够运行就用 try——except 语言规避
+except:
+    print("“私有变量”无法访问")
+
+c.get_x() # 访问变量
+
+c.set_x(1314) # 修改变量
+c.get_x()
+
+print(c._C__x)
+```
+上面的方法可以访问到`c.__x`，也能够通过`_C__x`访问，这在定义的时候是没有出现这个变量的。这是因为Python也不会把直接访问的路封死，我们可以用`__dict__`看一下，返回的是
+```base
+{'_C__x':520}
+```
+在这里面我们虽然没有看到`__x`，但是多了一个`_C__x`的属性。因此是能通过`c._C__x`访问到这个变量的。
+
+在Python中的“私有变量”就是把你想要私有的那个变量，偷偷地被改了名字，而且这个改法也是有规律的，那么方法名也是同样的道理。
+\[
+下划线+类名+双下划线+属性/方法名
+\]
+
+尽管知道Python最后改成了什么名字，也强烈不建议使用这个名字，毕竟有意使用了双下划线开头，就表示这个属性或者方法是希望不被外界所访问到的，因此我们应该遵循这个约定俗成的规则。
+
+另外，当一个变量名是以单个`_`开头，默认是仅供内部使用的变量，当看到这样的名字时就不要随意去访问它（当然如果非要访问Python也不会阻止你的）；当一个变量名是以单个`_`结尾，如果变量命名和Python的保留字符冲突了，可以在变量名后面添加一个`_`来避免这个问题。
+
+#### 给对象添加“私有变量”
+在对象诞生之后，可以通过**动态添加属性的方式**，添加私有变量。例如：
+```python
+c.__y = 520
+```
+这个时候通过`print(c.__dict__)`可以看一下对象`c`的属性，返回的是：
+```base
+{'_C__x': 1314, '__y': 520}
+```
+我们可以看到，创建对象之后再添加“私有变量”，Python是不会改变其名字的。所以，名字改编是发生在类实例化对象的时候的事情。
 
 + 尽请期待
