@@ -4073,4 +4073,97 @@ c.__y = 520
 ```
 我们可以看到，创建对象之后再添加“私有变量”，Python是不会改变其名字的。所以，名字改编是发生在类实例化对象的时候的事情。
 
+### 类属性`__slots__`
+之前我们通过`__dict__`发现类是使用字典来存放属性的，虽然类对于映射关系的处理非常快，但是其内存的占用也是相当大的。字典除了占用的内存大之外全是优点。为了处理这种情况，Python专门设计了一个叫做`__slots__`的类属性，避免了利用字典存放造成空间上的浪费。但是经过`__slots__`定义的类的属性只能存在`__slots__`中定义的属性。例如：
+```python
+class C:
+    __slots__ = ["x","y"]
+    def __init__(self,x):
+        self.x = x
+
+c = C(520) # 添加属性 x
+c.y = 1314 # 添加属性 y
+print(c.x)
+print(c.y)
+
+c.z = 666 # 报错
+```
+运行的结果如下：
+```base
+520
+1314
+Traceback (most recent call last):
+  File "f:\Microsoft Visual Station\Python\《零基础入门学习Python》\test.py", line 11, in <module>
+    c.z = 666 # 报错
+AttributeError: 'C' object has no attribute 'z'
+```
+从结果可以看出当我们添加一个`__slots__`中不存在的属性时就会报错。**这个是写死了的，类里面只能存在`__slots__`中存在的属性**！！！从类的内部也是这样的。可以自行尝试如下代码：
+```python
+class D:
+    __slots__ = ["x","y"]
+    def __init__(self,x,y,z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+d = D(3,4,5) # 报错
+```
+因为使用`__slots__`属性，对象就会划分一个固定大小的内存来存放指定的属性，这个时候`__dict__`属性也就不需要了，内存因此也就节约了出来。这个节约的效果也是非常显著的，由于现在写的都是一些非常简单的程序，不太能把这个优化放大。下面的文章可以清楚的看到使用`__slots__`属性带来非常明显的节约内存的效果。
+>原文章：[Saving 9 GB of RAM with Python's `__slots__`](https://benhoyt.com/writings/save-ram-with-python-slots/)
+>### Saving 9 GB of RAM with Python's `__slots__`
+>We’ve mentioned before how Oyster.com’s Python-based web servers cache huge amounts of static content in huge Python dicts (hash tables). Well, we recently saved over 2 GB in each of four 6 GB server processes with a single line of code — using `__slots__` on our Image class.
+>
+>Here’s a screenshot of RAM usage before and after deploying this change on one of our servers:
+>![physical-memory-usage-history](.\image\physical-memory-usage-history.png)
+>We allocate about a million instances of a class like the following:
+>```python
+>class Image(object):
+>    __slots__ = ['id', 'caption', 'url']
+>
+>    def __init__(self, id, caption, url):
+>        self.id = id
+>        self.caption = caption
+>        self.url = url
+>        self._setup()
+>
+>   # ... other methods ...
+>```
+>By default Python uses a dict to store an object’s instance attributes. Which is usually fine, and it allows fully dynamic things like setting arbitrary new attributes at runtime.
+>
+>However, for small classes that have a few fixed attributes known at “compile time”, the dict is a waste of RAM, and this makes a real difference when you’re creating a million of them. You can tell Python not to use a dict, and only allocate space for a fixed set of attributes, by settings `__slots__` on the class to a fixed list of attribute names:
+>```python
+>class Image(object):
+>    __slots__ = ['id', 'caption', 'url']
+>
+>    def __init__(self, id, caption, url):
+>        self.id = id
+>        self.caption = caption
+>        self.url = url
+>        self._setup()
+>
+>    # ... other methods ...
+>```
+>Note that you can also use collections.namedtuple, which allows attribute access, but only takes the space of a tuple, so it’s similar to using `__slots__` on a class. However, to me it always feels weird to inherit from a namedtuple class. Also, if you want a custom initializer you have to override `__new__` rather than `__init__`.
+>
+>Warning: Don’t prematurely optimize and use this everywhere! It’s not great for code maintenance, and it really only saves you when you have thousands of instances.
+
+不过`__slots__`有一点需要强调的是，看之前的演示就很容易发现使用了`__slots__`属性的副作用且是相当明显的，就是要以牺牲Python动态语言的灵活性作为前提。但是在实际的编程中，很多开发者又利用这个副作用来限制类属性的滥用。
+
+最后需要说明的是，继承自父类的`__slots__`属性是不会在子类中生效的，Python只会关注各个具体的类中定义的`__slots__`属性。例如：
+```python
+class C:
+    __slots__ = ["x","y"]
+    def __init__(self,x):
+        self.x = x
+
+class E(C):
+    pass
+
+e = E(520)
+e.y = 1314
+e.z = 5201314
+print(e.__slots__.e.__dict__)
+```
+对象`e`固然有`__slots__`属性，因为是继承自类`C`。同时，它也有`__dict__`属性，新添加的`z`就会到`__dict__`属性里面去。所以，继承自父类的`__slots__`属性是不会在子类中生效的。
+
 + 尽请期待
