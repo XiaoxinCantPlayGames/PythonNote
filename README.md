@@ -4301,4 +4301,375 @@ print(e.__slots__.e.__dict__)
 ```
 对象`e`固然有`__slots__`属性，因为是继承自类`C`。同时，它也有`__dict__`属性，新添加的`z`就会到`__dict__`属性里面去。所以，继承自父类的`__slots__`属性是不会在子类中生效的。
 
+### 魔法方法
+接下来会介绍一系列特殊的方法，这些方法可以让你实现对象自由。你想象的对象是什么样的，它就能够是什么样的。因为接下来的一系列的方法确实很强。就像是给对象喂了迷魂汤，仿佛施加了魔法一样，因此大家也将它称为**魔法方法**。
+#### `__init__()`方法
+之前就介绍过了。在实现初始化对象的时候实现个性化定制。与我们自己写的方法不一样的是，`__init__()`方法可以在类实例化对象的时候自动进行调用。因此它是参与对象构建的方法。
+
+#### `__new__(cls[, ...])`方法
+参与对象构建还有`__new__(cls[, ...])`方法，此方法的调用在`__init__()`之前。事实上，对象是有`__new__()`方法来构建的，因此我们看到的第一个参数是`cls`是类，而不是`self`。所以对象的诞生流程是先调用`__new__()`方法，创建一个类的实例，然后将类传给`__init__()`方法，进行个性化定制这样的一个流程。也就是说创建实例对象的魔法方法或者是实例化对象中调用的第一个魔法方法是什么，答案就是`__new__()`方法，因为这个`self`就是这个方法返回的。
+
+通常情况下，需要对`__new__()`方法重写的情况非常少：一种情况是在元类中去定制类；另一种情况是在继承不可变数据类型的时候，如果需要对对象进行修改。例如：
+```python
+class CapStr(str):
+    def __new__(cls,string):
+        string = string.upper()
+        return super().__new__(cls,string)
+
+cs = CapStr("Nanjing")
+print(cs)
+```
+打印的都是由大写字母组成的字符串对象。这里之所以能对不可变对象进行修改，是因为我们在实例对象被创建之前就进行了拦截，然后调用`super().__new__()`去创建了真正的实例。由于`CapStr`类是继承自`str`字符串类的，因此字符串有的方法，对象`cs`同样拥有。
+
+#### `__del__(self)`方法
+在对象销毁的时候，同样需要一个叫`__del__(self)`的魔法方法。例如：
+```python
+import time
+
+class C:
+    def __init__(self):
+        print("我来了~")
+    def __del__(self):
+        print("我走了~")
+
+c = C()
+del c # 会打印
+
+c = C()
+d = c
+del c # 不会打印
+time.sleep(4)
+print("之后的打印是由于程序结束时删除对象d时调用 __del__()")
+```
++ 原视频中是使用的Python的官方IDLE，执行完`del c`后，程序并没有结束，因此之后不会删除掉`d`。在vscode等第三方的IDE中，执行完一次是整个程序结束，需要删除掉所有的对象，因此在vscode中会出现也会打印“我走了”的情况，所以这个“我走了~”是对象`d`被删除而打印的。
+
+根据Python的官方文档描述，在删除对象之前，如果将对象的`self`参数传递出来，可以实现该对象在计算机中的另一种存在形式，即使是原来的对象被删除了。**官方不建议怎么做**！
+
+#### 运算相关的魔法方法
+能看原文章还是去看原文章吧，视频里面虽然有，但是还是支持一下正版吧＞﹏＜
+
++  算术运算
+
+| 魔法方法 | 相关运算符 | 触发方式 | 备注 |
+| :---: | :---: | :---: | :---: |
+| `__add__(self, other)` | `+` | `x + y` (由运算符左侧的对象 `x` 触发) | 加法运算 |
+| `__sub__(self, other)` | `-` | `x - y` (由运算符左侧的对象 `x` 触发) | 减法运算 |
+| `__mul__(self, other)` | `*` | `x * y` (由运算符左侧的对象 `x` 触发) | 乘法运算 |
+| `__matmul__(self, other)` | `@` | `x @ y` (由运算符左侧的对象 `x` 触发) | 矩阵乘法运算 |
+| `__truediv__(self, other)`| `/` | `x / y` (由运算符左侧的对象 `x` 触发) | 真除法运算 |
+| `__floordiv__(self, other)`| `//` | `x // y` (由运算符左侧的对象 `x` 触发) | 地板除法运算 |
+| `__mod__(self, other)` | `%` | `x % y` (由运算符左侧的对象 `x` 触发) | 求余数运算 |
+| `__divmod__(self, other)` | 无 | `divmod(x, y)` (由对象 `x` 触发) | 见 `divmod()` 函数 |
+| `__pow__(self, other[, modulo])`| `**` | `x ** y` 或 `pow(x, y)` (由运算符左侧的对象 `x` 触发) | 幂运算, 见 `pow()` 函数 |
+| `__lshift__(self, other)` | `<<` | `x << y` (由运算符左侧的对象 `x` 触发) | 按位左移运算 |
+| `__rshift__(self, other)` | `>>` | `x >> y` (由运算符左侧的对象 `x` 触发) | 按位右移运算 |
+| `__and__(self, other)` | `&` | `x & y` (由运算符左侧的对象 `x` 触发) | 按位与运算 |
+| `__xor__(self, other)` | `^` | `x ^ y` (由运算符左侧的对象 `x` 触发) | 按位异或运算 |
+| `__or__(self, other)` | `\|` | `x \| y` (由运算符左侧的对象 `x` 触发) | 按位或运算 |
+
++ 反算术运算
+
+| 魔法方法 | 相关运算符 | 触发方式 | 备注 |
+| :---: | :---: | :---: | :---: |
+| `__radd__(self, other)` | `+` | `x + y` (由运算符右侧的对象 `y` 触发) | 加法运算 |
+| `__rsub__(self, other)` | `-` | `x - y` (由运算符右侧的对象 `y` 触发) | 减法运算 |
+| `__rmul__(self, other)` | `*` | `x * y` (由运算符右侧的对象 `y` 触发) | 乘法运算 |
+| `__rmatmul__(self, other)` | `@` | `x @ y` (由运算符右侧的对象 `y` 触发) | 矩阵乘法运算 |
+| `__rtruediv__(self, other)`| `/` | `x / y` (由运算符右侧的对象 `y` 触发) | 真除法运算 |
+| `__rfloordiv__(self, other)`| `//` | `x // y` (由运算符右侧的对象 `y` 触发) | 地板除法运算 |
+| `__rmod__(self, other)` | `%` | `x % y` (由运算符右侧的对象 `y` 触发) | 求余数运算 |
+| `__rdivmod__(self, other)` | 无 | `divmod(x, y)` (由对象 `y` 触发) | 见 `divmod()` 函数 |
+| `__rpow__(self, other[, modulo])`| `**` | `y ** x` 或 `pow(y, x)` (由运算符右侧的对象 `y` 触发) | 幂运算, 见 `pow()` 函数 |
+| `__rlshift__(self, other)` | `<<` | `x << y` (由运算符右侧的对象 `y` 触发) | 按位左移运算 |
+| `__rrshift__(self, other)` | `>>` | `x >> y` (由运算符右侧的对象 `y` 触发) | 按位右移运算 |
+| `__rand__(self, other)` | `&` | `x & y` (由运算符右侧的对象 `y` 触发) | 按位与运算 |
+| `__rxor__(self, other)` | `^` | `x ^ y` (由运算符右侧的对象 `y` 触发) | 按位异或运算 |
+| `__ror__(self, other)` | `\|` | `x \| y` (由运算符右侧的对象 `y` 触发) | 按位或运算 |
+
++  增强赋值运算
+
+| 魔法方法 | 相关运算符 | 触发方式 | 备注 |
+| :---: | :---: | :---: | :---: |
+| `__iadd__(self, other)` | `+=` | `x += y` (由运算符左侧的对象 `x` 触发) | 加法运算 |
+| `__isub__(self, other)` | `-=` | `x -= y` (由运算符左侧的对象 `x` 触发) | 减法运算 |
+| `__imul__(self, other)` | `*=` | `x *= y` (由运算符左侧的对象 `x` 触发) | 乘法运算 |
+| `__imatmul__(self, other)` | `@=` | `x @= y` (由运算符左侧的对象 `x` 触发) | 矩阵乘法运算 |
+| `__itruediv__(self, other)`| `/=` | `x /= y` (由运算符左侧的对象 `x` 触发) | 真除法运算 |
+| `__ifloordiv__(self, other)`| `//=` | `x //= y` (由运算符左侧的对象 `x` 触发) | 地板除法运算 |
+| `__imod__(self, other)` | `%=` | `x %= y` (由运算符左侧的对象 `x` 触发) | 求余数运算 |
+| `__ipow__(self, other[, modulo])`| `**=` | `x **= y` (由运算符左侧的对象 `x` 触发) | 幂运算 |
+| `__ilshift__(self, other)` | `<<=` | `x <<= y` (由运算符左侧的对象 `x` 触发) | 按位左移运算数 |
+| `__irshift__(self, other)` | `>>=` | `x >>= y` (由运算符左侧的对象 `x` 触发) | 按位右移运算 |
+| `__iand__(self, other)` | `&=` | `x &= y` (由运算符左侧的对象 `x` 触发) | 按位与运算 |
+| `__ixor__(self, other)` | `^=` | `x ^= y` (由运算符左侧的对象 `x` 触发) | 按位异或运算 |
+| `__ior__(self, other)` | `\|=` | `x \|= y` (由运算符左侧的对象 `x` 触发) | 按位或运算 |
+
++ 一元运算
+
+| 魔法方法 | 相关运算符 | 触发方式 | 备注 |
+| :---: | :---: | :---: | :---: |
+| `__neg__(self)` | `-` | `-x` | 取相反数运算 |
+| `__pos__(self)` | `+` | `+x` | 正数运算 |
+| `__abs__(self)` | 无 | `abs(x)` | 见 `abs()` 函数 |
+| `__invert__(self)` | `~` | `~x` | 按位取反运算 |
+
++ 其他运算
+
+| 魔法方法 | 相关运算符 | 触发方式 | 备注 |
+| :---: | :---: | :---: | :---: |
+| `__complex__(self)` | 无 | `complex(x)` | 见 `complex()` 函数 |
+| `__int__(self)` | 无 | `int(x)` | 见 `int()` 函数 |
+| `__float__(self)` | 无 | `float(x)` | 见 `float()` 函数 |
+| `__index__(self)` | 无 | `index(x)` | 当对象被用于索引时，或内置的 `bin()`, `hex()`, `oct()` 函数将使用该魔法方法的返回值作为参数。如果没有定义 `__complex__`, `__int__`, `__float__`，则相应的 `complex()`, `int()`, `float()` 函数将使用该魔法方法的返回值作为参数。 |
+| `__round__(self[, ndigits])` | 无 | `round(x)` | 见 `round()` 函数 |
+| `__trunc__(self)` | 无 | `math.trunc(x)` | 见 `math.trunc()` 函数 |
+| `__floor__(self)` | 无 | `math.floor(x)` | 见 `math.floor()` 函数 |
+| `__ceil__(self)` | 无 | `math.ceil(x)` | 见 `math.ceil()` 函数 |
+
+提到运算方法，首先想到的是加减乘除。Python的还将除法细分为真除法和地板除，还有求余数、幂运算。Python也提供了相应的魔法方法，我们想怎么加就怎么加，想怎么算就怎么算。**要注意的是魔法方法是一种拦截，是一种重写**。
+
+##### 算术运算
+例如，我们让两个字符串的加法改成计算相加之后的长度：
+```python
+class S(str):
+    def __add__(self,other):
+        return len(self) + len(other)
+
+s1 = S("Jiangsu")
+s2 = S("Nanjing")
+print(s1 + s2)
+
+# 探究这个方法是哪个对象的
+print(s1 + "Nanjing")
+print("Jiangsu" + s2)
+```
+我们用`__add__()`对字符串的加法进行重写，让`s1 + s2`返回的是字符串的长度。那么探究这个方法是前面的还是后面的对象，我们直接让两个对象分别加普通的字符串，一个加前面一个加后面。结果发现`s1`的结果就是字符串的长度，所以是前面对象的方法。其实从`__add__()`魔法方法的代码里面可以看到`self`是自己，也就是说是加号左边的对象；`other`是另外的，也就是说加号右边的对象。因此`s1 + s2`就相当于`s1.__add__(s2)`其他的魔法方法都和这个差不多。
+
+##### 反算术运算
+反算数运算和上面的算术运算是一一对应的
++ 接下来用`__radd__()`方法举例
+
+用`__radd__()`方法有一个前提：当两个对象相加的时候，如果左侧的对象和右侧的对象不同类型，并且左侧的对象没有定义`__add__()`方法，或者其`__add__()` 方法返回`NotImplemented`，那么Python就会去右侧的对象中查找是否含有`__radd__()`方法的定义。例如：
+```python
+class S1(str):
+    def __add__(self,other):
+        return NotImplemented # 表示方法未实现
+
+class S2(str):
+    def __radd__(self,other):
+        return len(self) + len(other)
+
+s1 = S1("Jiangsu")
+s2 = S2("Nanjing")
+print(s1 + s2)
+```
+这里能成功调用`S2`的`__radd__()`方法首先是`S2`定义了`__radd__()`方法，其次`s1`和`s2`是两个基于不同的类的对象，其中`S1`里边必须不能实现`__add__()`方法，否则依然会首先执行左侧对象的`__add__()`方法，上面的`return NotImplemented`的含义就是表示这个方法未实现。如果，`S1`没有写`__add__()`方法也是可以的。其他的也是一样。
+
+##### 增强赋值运算
+增强赋值运算和上面的算术运算符也是一一对应的。和上面的方法不同的是，这些方法在运算的基础上还包含了赋值的操作。这个赋值的操作是修改对象的本身也就是自我赋值，也就是说`s1.__iadd__(s2)`相当于`s1 += s2`。例如：
+```python
+class S1(str):
+    def __iadd__(self,other):
+        return len(self) + len(other)
+
+class S2(str):
+    def __radd__(self,other):
+        return len(self) + len(other)
+
+s1 = S1("Jiangsu")
+s2 = S2("Nanjing")
+
+s1 += s2
+print(s1,type(s1))
+
+s2 += s2
+print(s2,type(s2))
+```
+看最后的结果可以发现，`s1`改变了原本的类型成为了一个整数类型，换句话说就是现在的`s1`和最开始的`s1`已经不同了，因此用增强赋值运算之前要思考清楚对象需不需要变。
+
+如果左侧的对象没有相应的`__iadd__()`方法，那么Python会退而求其次使用相应的`__add__()`和`__radd__()`方法来替代。上面的`s2`经过`s2 += s2`的运算赋值后变为了`NanjingNanjing`。虽然类`S2`中定义了`__radd__()`方法，但是在这里`s2 += s2`并不满足调用条件：两个基于不同的类的对象，这里的`S2`和`S2`都是相同的类，所以不会调用`__radd__()`方法，而是去父类`str`里面查找`__add__()`方法。
+
+##### 其他运算
+其他运算里面也有相应的魔法方法。以其中的`__int__()`内置函数为例，利用`__int__()`这个魔法方法，可以实现对中文字符转换整数的对象。
+```python
+class zh_CN_INT:
+    def __init__(self,num):
+        self.num = num
+    
+    def __int__(self):
+        try:
+            return int(self.num)
+        except ValueError:
+            zh_CN = {"零":0,"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9,
+                            "壹":1,"贰":2,"叁":3,"肆":4,"伍":5,"陆":6,"柒":7,"捌":8,"玖":9}
+            result = 0
+
+            for each in self.num:
+                if each in self.num:
+                    result += zh_CN[each]
+                else:
+                    result += int(each)
+                result *= 10
+            return result // 10
+```
+
+其他的方法对有搞数学的同学来说比较重要啦~
+
+### 属性访问
+在Python中含有4个和属性相关的方法，分别是`hasattr()`、`getattr()`、`setattr()`和`delattr()`。看前缀就知道这四个方法分别是做什么的：
++ `hasattr()`：判断有没有这个属性
++ `getattr()`：获取属性值
++ `setattr()`：修改属性
++ `delattr()`：删除属性
+```python
+class C:
+    def __init__(self, name, age):
+        self.name = name
+        self.__age = age
+
+c = C("Xiaoxin",18)
+
+print(hasattr(c,"name"))
+print(getattr(c,"name"),getattr(c,"_C__age")) # __age为私有变量，名称改变
+print(setattr(c,"_C__age",19))
+print(getattr(c,"name"),getattr(c,"_C__age"))
+delattr(c,"_C__age")
+print(hasattr(c,"_C__age"))
+```
+
+#### 属性访问与魔法方法
+上面的方法也拥有与之对应的魔法方法
++ `__getattr__()`和`__getattribute__()`
+
+`__getattr__()`当用户试图访问一个不存在的属性的时候才会被触发，在这之前也会触发`__getattribute__()`。
+```python
+class C:
+    def __init__(self, name, age):
+        self.name = name
+        self.__age = age
+    def __getattribute__(self,attrname):
+        print("拿来吧你~")
+        return super().__getattribute__(attrname)
+    def __getattr__(self,attrname):
+        if attrname == "FishC":
+            print("I love FishC")
+        else:
+            raise AttributeError(attrname)
+
+c = C("Xiaoxin",18)
+
+print(c.name)
+print(c.x) # 这一行会报错
+```
++ `__setattr__()`
+```python
+class D:
+    def __setattr__(self,name,value):
+        self.name = value
+
+d = D()
+d.name = "小甲鱼" # 会报错
+```
+调用这个方法的逻辑是执行`self.name=value`，将这个`value`参数赋值到`self.name`中，看似没有问题。其实实际上在执行`self.name=value`的时候又相当于给自己调用了一次赋值操作，然后又再次执行了`self.name=value`，进行无限递归。修改的话可以交给`super()`，或者是根据属性在类中的存放形式（字典）改写：
+```python
+class D:
+    def __setattr__(self,name,value):
+        self.__dict__[name] = value
+
+d.name = "小甲鱼
+print(d.name)
+```
+
++ `__delattr__()`
+```python
+class D:
+    def __setattr__(self,name,value):
+        self.__dict__[name] = value
+    def __delattr__(self,name):
+        del self.__dict__[name]
+
+d = D()
+d.name = "小甲鱼"
+print(d.__dict__)
+del d.name
+print(d.__dict__)
+```
+
+### 索引和切片和迭代协议
+当被索引的时候，Python会调用一个`__getitem__(self,index)`的魔法方法。这个魔法方法技能响应单个下标的索引操作，又能支持代表范围的切片索引方式。例如：
+```python
+class C:
+    def __getitem__(self,index):
+        print(index)
+
+c = C()
+print(c[2],c[2:8])
+
+s = "I love Python"
+print(s[2:6],s[slice(2,6)])
+print(s[7:],s[slice(7,None)])
+print(s[::4],s[slice(None,None,4)])
+```
+可以看出切片操作和`slice()`的不同之处是`slice()`必须指定参数，没有也要写上`None`。
+
+为索引或切片赋值的操作的时候会被`__setitem__(self,index)`魔法方法拦截，其实只要和获取有关的操作都会被拦截。例如：
+```python
+class D:
+    def __init__(self,data):
+        self.data = data
+    def __getitem__(self,index):
+        return self.data[index]
+    def __setitem(self,index,value):
+        self.data[index] = value
+
+d = D([1,2,3,4,5])
+print(d[1])
+d[1] = 1
+print(d[1])
+
+d = [2:4] =[2,3]
+print(d[:])
+
+# 只要和获取有关的操作都会被拦截
+class D:
+    def __init__(self,data):
+        self.data = data
+    def __getitem__(self,index):
+        return self.data[index] * 2
+
+d = D([1,2,3,4,5])
+for i in d:
+    print(i,end=" ")
+```
+
+#### 迭代协议
+在Python中，如果一个对象定义了`__iter__()`方法就是一个可迭代对象；如果一个可迭代对象定义了`__next__()`方法就是迭代器。比如列表含有`__iter__()`方法，但是没有`__next__()`方法。
+```python
+x = [1,2,3,4,5]
+print(dir(x))
+next(x) # 会报错
+```
+返回的结果是：
+```
+['__add__', '__class__', '__class_getitem__', '__contains__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__gt__', '__hash__', '__iadd__', '__imul__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__rmul__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__subclasshook__', 'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 'pop', 'remove', 'reverse', 'sort']
+```
+很显然没有`__next__`，因此`next(x)`这一行就会报错。
+
++ for循环原理
+根据上面的描述，for循环的操作是先将对象传入内置函数`iter()`中，然后拿到一个相应的迭代器。因为只有拿到这个迭代器才能拥有所需的`__next__()`魔法方法。然后第二步就是用`__next__()`方法进行真正的迭代操作。接下来可以模拟一下：
+```python
+x = [1,2,3,4,5]
+_ = iter(x)
+while True:
+    try:
+        i = _.__next__()
+    except StopIteration:
+        break
+    print(i,end=" ") 
+```
+
+### 代偿
+
+
+
 + 尽请期待
